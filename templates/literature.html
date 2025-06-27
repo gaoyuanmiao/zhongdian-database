@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>资料库 - 论文与毕业论文</h2>
+<table>
+    <tr>
+        {% for col in data[0].keys() %}
+            <th>{{ col }}</th>
+        {% endfor %}
+    </tr>
+    {% for row in data %}
+    <tr>
+        {% for col in row.values() %}
+            <td>{{ col }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>数据库 - 小流域与全国农区资料</h2>
+<table>
+    <tr>
+        {% for col in data[0].keys() %}
+            <th>{{ col }}</th>
+        {% endfor %}
+    </tr>
+    {% for row in data %}
+    <tr>
+        {% for key, value in row.items() %}
+            {% if key == '文件名或链接' %}
+                <td>
+                    {% if value %}
+                        <a href="/download/{{ value }}">下载</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            {% else %}
+                <td>{{ value }}</td>
+            {% endif %}
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
