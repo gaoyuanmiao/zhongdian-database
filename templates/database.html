@@ -2,95 +2,22 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>数据库管理页面</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f8f8f8;
-    }
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 95%;
-      margin: 20px auto;
-      background-color: #fff;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    a {
-      text-decoration: none;
-      color: #007BFF;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    form.inline-form {
-      display: inline;
-    }
-    input[type="file"] {
-      margin-bottom: 5px;
-      width: 140px;
-    }
-    input[type="text"] {
-      width: 140px;
-      padding: 4px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-    }
-    input[type="submit"] {
-      padding: 4px 10px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-left: 4px;
-    }
-    input[type="submit"]:hover {
-      background-color: #0056b3;
-    }
-    .flash {
-      width: 90%;
-      margin: 10px auto;
-      padding: 10px;
-      background-color: #ffeeba;
-      border: 1px solid #f5c6cb;
-      color: #856404;
-      text-align: center;
-      border-radius: 4px;
-    }
-    .back-link {
-      display: block;
-      text-align: center;
-      margin: 20px;
-    }
-  </style>
+  <title>课题三数据库</title>
 </head>
 <body>
-
   <h1>国家重点研发项目 - 课题三数据库</h1>
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
-      <div class="flash">
+      <ul>
         {% for message in messages %}
-          {{ message }}
+          <li>{{ message }}</li>
         {% endfor %}
-      </div>
+      </ul>
     {% endif %}
   {% endwith %}
 
-  <table>
+  <table border="1" cellpadding="5" cellspacing="0">
     <thead>
       <tr>
         <th>序号</th>
@@ -101,6 +28,7 @@
         <th>时空分辨率/备注</th>
         <th>文件状态</th>
         <th>上传</th>
+        <th>删除</th>
       </tr>
     </thead>
     <tbody>
@@ -112,16 +40,15 @@
           <td>{{ row['数据类型'] }}</td>
           <td>{{ row['是否可用'] }}</td>
 
-          <!-- 时空分辨率/备注 可编辑 -->
           <td>
-            <form class="inline-form" action="{{ url_for('update_note') }}" method="post">
-              <input type="hidden" name="序号" value="{{ row['序号'] }}">
-              <input type="text" name="new_note" value="{{ row['时空分辨率/备注'] }}">
+            <form action="{{ url_for('update_database') }}" method="post">
+              <input type="hidden" name="index" value="{{ loop.index0 }}">
+              <input type="hidden" name="column" value="时空分辨率/备注">
+              <input type="text" name="value" value="{{ row['时空分辨率/备注'] }}">
               <input type="submit" value="保存">
             </form>
           </td>
 
-          <!-- 文件状态列 -->
           <td>
             {% if row['FileName'] %}
               {% if row['FileName'] in existing_files %}
@@ -134,10 +61,9 @@
             {% endif %}
           </td>
 
-          <!-- 上传列 -->
           <td>
             {% if row['FileName'] %}
-              <form class="inline-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+              <form action="{{ url_for('upload_database') }}" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="target_name" value="{{ row['FileName'] }}">
                 <input type="file" name="file" required>
                 <input type="submit" value="上传">
@@ -146,14 +72,18 @@
               -
             {% endif %}
           </td>
+
+          <td>
+            <form action="{{ url_for('delete_database_row') }}" method="post">
+              <input type="hidden" name="index" value="{{ loop.index0 }}">
+              <input type="submit" value="删除">
+            </form>
+          </td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <div class="back-link">
-    <a href="{{ url_for('index') }}">返回首页</a>
-  </div>
-
+  <p><a href="{{ url_for('index') }}">返回首页</a></p>
 </body>
 </html>

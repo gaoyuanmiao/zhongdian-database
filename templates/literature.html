@@ -1,18 +1,89 @@
-{% extends "layout.html" %}
-{% block content %}
-<h2>资料库 - 论文与毕业论文</h2>
-<table>
-    <tr>
-        {% for col in data[0].keys() %}
-            <th>{{ col }}</th>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>课题三资料库</title>
+</head>
+<body>
+  <h1>国家重点研发项目 - 课题三资料库</h1>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
         {% endfor %}
-    </tr>
-    {% for row in data %}
-    <tr>
-        {% for col in row.values() %}
-            <td>{{ col }}</td>
-        {% endfor %}
-    </tr>
-    {% endfor %}
-</table>
-{% endblock %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>学校</th>
+        <th>类型</th>
+        <th>标题</th>
+        <th>作者/年份</th>
+        <th>关键词/研究方向</th>
+        <th>文件名或链接</th>
+        <th>上传</th>
+        <th>删除</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data %}
+        {% set row_index = loop.index0 %}
+        <tr>
+          <td>{{ row['序号'] }}</td>
+
+          {% for col in ['学校','类型','标题','作者/年份','关键词/研究方向'] %}
+            <td>
+              <form action="{{ url_for('update_literature') }}" method="post">
+                <input type="hidden" name="index" value="{{ row_index }}">
+                <input type="hidden" name="column" value="{{ col }}">
+                <input type="text" name="value" value="{{ row[col] }}">
+                <input type="submit" value="保存">
+              </form>
+            </td>
+          {% endfor %}
+
+          <td>
+            {% if row['FileName'] %}
+              {% if row['FileName'] in existing_files %}
+                <a href="{{ url_for('download_file', filename=row['FileName']) }}">下载</a>
+              {% else %}
+                {{ row['FileName'] }}
+              {% endif %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+
+          <td>
+            <form action="{{ url_for('upload_literature') }}" method="post" enctype="multipart/form-data">
+              <input type="hidden" name="index" value="{{ row_index }}">
+              <input type="file" name="file" required>
+              <input type="submit" value="上传">
+            </form>
+          </td>
+
+          <td>
+            <form action="{{ url_for('delete_literature_row') }}" method="post">
+              <input type="hidden" name="index" value="{{ row_index }}">
+              <input type="submit" value="删除">
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>新增资料条目</h2>
+  <form action="{{ url_for('add_literature_row') }}" method="post">
+    <input type="submit" value="➕ 新增一行">
+  </form>
+
+  <p><a href="{{ url_for('index') }}">返回首页</a></p>
+</body>
+</html>
