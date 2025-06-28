@@ -82,5 +82,25 @@ def upload_file():
 
     return redirect(url_for('database'))
 
+@app.route('/update_note', methods=['POST'])
+def update_note():
+    row_id = request.form.get('序号')
+    new_note = request.form.get('new_note')
+
+    if not row_id or new_note is None:
+        flash('请填写完整的信息')
+        return redirect(url_for('database'))
+
+    try:
+        path = os.path.join(DATA_DIR, '数据库.csv')
+        df = pd.read_csv(path, encoding='utf-8-sig').fillna('')
+        df.loc[df['序号'] == int(row_id), '时空分辨率/备注'] = new_note
+        df.to_csv(path, index=False, encoding='utf-8-sig')
+        flash(f'序号 {row_id} 的时空分辨率/备注 已更新成功！')
+    except Exception as e:
+        flash(f'更新失败：{e}')
+
+    return redirect(url_for('database'))
+
 if __name__ == '__main__':
     app.run(debug=True)
