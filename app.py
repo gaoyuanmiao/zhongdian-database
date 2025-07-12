@@ -18,7 +18,6 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # Table for Database entries
     c.execute('''
         CREATE TABLE IF NOT EXISTS database_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +29,6 @@ def init_db():
         )
     ''')
 
-    # Table for Literature entries
     c.execute('''
         CREATE TABLE IF NOT EXISTS literature_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,22 +43,54 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ---------- Routes ----------
+# ---------- INDEX ----------
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 # ===========================
 # DATABASE
 # ===========================
 @app.route('/database')
 def database():
+    # 定义四个流域信息
+    regions_info = [
+        {
+            'key': 'chahe',
+            'name': '北京潮河小流域',
+            'description': '这里是北京潮河小流域的介绍文字，可以根据需要自行修改。',
+            'image': 'chahe.jpg'
+        },
+        {
+            'key': 'songxi',
+            'name': '南京松溪河小流域',
+            'description': '这里是南京松溪河小流域的介绍文字，可以根据需要自行修改。',
+            'image': 'songxi.jpg'
+        },
+        {
+            'key': 'xinfeng',
+            'name': '江西信丰小流域',
+            'description': '这里是江西信丰小流域的介绍文字，可以根据需要自行修改。',
+            'image': 'xinfeng.jpg'
+        },
+        {
+            'key': 'wuyuan',
+            'name': '内蒙古五原小流域',
+            'description': '这里是内蒙古五原小流域的介绍文字，可以根据需要自行修改。',
+            'image': 'wuyuan.jpg'
+        },
+    ]
+
+    # 查询数据库中每个流域的数据
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT * FROM database_entries')
-    entries = c.fetchall()
+    for region in regions_info:
+        c.execute('SELECT * FROM database_entries WHERE region_name = ?', (region['key'],))
+        region['entries'] = c.fetchall()
     conn.close()
-    return render_template('database.html', entries=entries)
+
+    return render_template('database.html', regions=regions_info)
 
 
 @app.route('/add_database_row', methods=['POST'])
@@ -69,6 +99,7 @@ def add_database_row():
     data_type = request.form['data_type']
     is_available = request.form['is_available']
     resolution_remark = request.form['resolution_remark']
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -143,6 +174,7 @@ def delete_database_file(entry_id):
     conn.close()
     flash('文件已删除')
     return redirect(url_for('database'))
+
 
 # ===========================
 # LITERATURE
