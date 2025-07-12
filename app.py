@@ -48,14 +48,12 @@ def init_db():
     conn.commit()
     conn.close()
 
----
 
 # =============== HOME PAGE ================
 @app.route('/')
 def index():
     return render_template('index.html')
 
----
 
 # =============== DATABASE 功能 ================
 @app.route('/database')
@@ -132,7 +130,6 @@ def delete_database_entry(entry_id):
     flash('条目已删除')
     return redirect(url_for('database'))
 
----
 
 # =============== LITERATURE 功能 ================
 @app.route('/literature')
@@ -209,7 +206,6 @@ def delete_literature_entry(entry_id):
     flash('文献条目已删除')
     return redirect(url_for('literature'))
 
----
 
 # =============== DOWNLOAD ================
 @app.route('/download_database/<path:filename>')
@@ -220,7 +216,6 @@ def download_database_file(filename):
 def download_literature_file(filename):
     return send_from_directory(LITERATURE_FILES_DIR, filename, as_attachment=True)
 
----
 
 if __name__ == '__main__':
     init_db()
