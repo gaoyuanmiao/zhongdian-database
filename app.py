@@ -207,7 +207,7 @@ def delete_literature_entry(entry_id):
     return redirect(url_for('literature'))
 
 
-# =============== DOWNLOAD ================
+#  DOWNLOAD 
 @app.route('/download_database/<path:filename>')
 def download_database_file(filename):
     return send_from_directory(FILES_DIR, filename, as_attachment=True)
