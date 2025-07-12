@@ -1,27 +1,25 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
-import sqlite3
 import os
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
-# =============== PATH ================
+# Persistent storage path
 BASE_PERSISTENT = 'persistent'
 DB_PATH = os.path.join(BASE_PERSISTENT, 'database.db')
-FILES_DIR = os.path.join(BASE_PERSISTENT, 'files')
-LITERATURE_FILES_DIR = os.path.join(BASE_PERSISTENT, 'literature_files')
+FILES_PATH = os.path.join(BASE_PERSISTENT, 'files')
 
-# 确保文件夹存在
-os.makedirs(FILES_DIR, exist_ok=True)
-os.makedirs(LITERATURE_FILES_DIR, exist_ok=True)
+# Ensure folders exist
+os.makedirs(FILES_PATH, exist_ok=True)
 
-# =============== DB INIT ================
+# ------------- DB INIT -------------
 def init_db():
     os.makedirs(BASE_PERSISTENT, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # 课题三数据库表
+    # Table for Database entries
     c.execute('''
         CREATE TABLE IF NOT EXISTS database_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +31,7 @@ def init_db():
         )
     ''')
 
-    # 资料库表
+    # Table for Literature entries
     c.execute('''
         CREATE TABLE IF NOT EXISTS literature_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,21 +47,25 @@ def init_db():
     conn.close()
 
 
-# =============== HOME PAGE ================
+# ------------- Routes -------------
 @app.route('/')
 def index():
     return render_template('index.html')
 
 
-# =============== DATABASE 功能 ================
+# ===========================
+# DATABASE ROUTES
+# ===========================
+
 @app.route('/database')
 def database():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT * FROM database_entries')
-    rows = c.fetchall()
+    entries = c.fetchall()
     conn.close()
-    return render_template('database.html', entries=rows)
+    return render_template('database.html', entries=entries)
+
 
 @app.route('/add_database_row', methods=['POST'])
 def add_database_row():
@@ -71,7 +73,6 @@ def add_database_row():
     data_type = request.form['data_type']
     is_available = request.form['is_available']
     resolution_remark = request.form['resolution_remark']
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -80,50 +81,61 @@ def add_database_row():
     ''', (region_name, data_type, is_available, resolution_remark, None))
     conn.commit()
     conn.close()
-    flash('已新增条目')
+    flash('条目已添加。')
     return redirect(url_for('database'))
+
 
 @app.route('/upload_database_file/<int:entry_id>', methods=['POST'])
 def upload_database_file(entry_id):
-    file = request.files['file']
-    if file:
-        filename = f"{entry_id}_{file.filename}"
-        file.save(os.path.join(FILES_DIR, filename))
+    if 'file' not in request.files:
+        flash('没有选择文件')
+        return redirect(url_for('database'))
 
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('UPDATE database_entries SET filename = ? WHERE id = ?', (filename, entry_id))
-        conn.commit()
-        conn.close()
-        flash('文件已上传')
+    file = request.files['file']
+    if file.filename == '':
+        flash('文件名为空')
+        return redirect(url_for('database'))
+
+    save_name = f"db_{entry_id}_{file.filename}"
+    file.save(os.path.join(FILES_PATH, save_name))
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('UPDATE database_entries SET filename = ? WHERE id = ?', (save_name, entry_id))
+    conn.commit()
+    conn.close()
+
+    flash('文件上传成功')
     return redirect(url_for('database'))
+
+
+@app.route('/download_database_file/<path:filename>')
+def download_database_file(filename):
+    return send_from_directory(FILES_PATH, filename, as_attachment=True)
+
 
 @app.route('/delete_database_file/<int:entry_id>', methods=['POST'])
 def delete_database_file(entry_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT filename FROM database_entries WHERE id = ?', (entry_id,))
-    result = c.fetchone()
-    if result and result[0]:
-        filepath = os.path.join(FILES_DIR, result[0])
-        if os.path.exists(filepath):
-            os.remove(filepath)
+    row = c.fetchone()
+    if row and row[0]:
+        try:
+            os.remove(os.path.join(FILES_PATH, row[0]))
+        except FileNotFoundError:
+            pass
         c.execute('UPDATE database_entries SET filename = NULL WHERE id = ?', (entry_id,))
-        conn.commit()
+    conn.commit()
     conn.close()
     flash('文件已删除')
     return redirect(url_for('database'))
+
 
 @app.route('/delete_database_entry/<int:entry_id>', methods=['POST'])
 def delete_database_entry(entry_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT filename FROM database_entries WHERE id = ?', (entry_id,))
-    result = c.fetchone()
-    if result and result[0]:
-        filepath = os.path.join(FILES_DIR, result[0])
-        if os.path.exists(filepath):
-            os.remove(filepath)
     c.execute('DELETE FROM database_entries WHERE id = ?', (entry_id,))
     conn.commit()
     conn.close()
@@ -131,15 +143,19 @@ def delete_database_entry(entry_id):
     return redirect(url_for('database'))
 
 
-# =============== LITERATURE 功能 ================
+# ===========================
+# LITERATURE ROUTES
+# ===========================
+
 @app.route('/literature')
 def literature():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT * FROM literature_entries')
-    rows = c.fetchall()
+    entries = c.fetchall()
     conn.close()
-    return render_template('literature.html', entries=rows)
+    return render_template('literature.html', entries=entries)
+
 
 @app.route('/add_literature_row', methods=['POST'])
 def add_literature_row():
@@ -147,7 +163,6 @@ def add_literature_row():
     type_ = request.form['type']
     author = request.form['author']
     note = request.form['note']
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
@@ -156,70 +171,73 @@ def add_literature_row():
     ''', (title, type_, author, note, None))
     conn.commit()
     conn.close()
-    flash('已新增文献条目')
+    flash('文献条目已添加。')
     return redirect(url_for('literature'))
+
 
 @app.route('/upload_literature_file/<int:entry_id>', methods=['POST'])
 def upload_literature_file(entry_id):
-    file = request.files['file']
-    if file:
-        filename = f"{entry_id}_{file.filename}"
-        file.save(os.path.join(LITERATURE_FILES_DIR, filename))
+    if 'file' not in request.files:
+        flash('没有选择文件')
+        return redirect(url_for('literature'))
 
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('UPDATE literature_entries SET filename = ? WHERE id = ?', (filename, entry_id))
-        conn.commit()
-        conn.close()
-        flash('文献文件已上传')
+    file = request.files['file']
+    if file.filename == '':
+        flash('文件名为空')
+        return redirect(url_for('literature'))
+
+    save_name = f"lit_{entry_id}_{file.filename}"
+    file.save(os.path.join(FILES_PATH, save_name))
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('UPDATE literature_entries SET filename = ? WHERE id = ?', (save_name, entry_id))
+    conn.commit()
+    conn.close()
+
+    flash('文件上传成功')
     return redirect(url_for('literature'))
+
+
+@app.route('/download_literature_file/<path:filename>')
+def download_literature_file(filename):
+    return send_from_directory(FILES_PATH, filename, as_attachment=True)
+
 
 @app.route('/delete_literature_file/<int:entry_id>', methods=['POST'])
 def delete_literature_file(entry_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('SELECT filename FROM literature_entries WHERE id = ?', (entry_id,))
-    result = c.fetchone()
-    if result and result[0]:
-        filepath = os.path.join(LITERATURE_FILES_DIR, result[0])
-        if os.path.exists(filepath):
-            os.remove(filepath)
+    row = c.fetchone()
+    if row and row[0]:
+        try:
+            os.remove(os.path.join(FILES_PATH, row[0]))
+        except FileNotFoundError:
+            pass
         c.execute('UPDATE literature_entries SET filename = NULL WHERE id = ?', (entry_id,))
-        conn.commit()
+    conn.commit()
     conn.close()
-    flash('文献文件已删除')
+    flash('文件已删除')
     return redirect(url_for('literature'))
+
 
 @app.route('/delete_literature_entry/<int:entry_id>', methods=['POST'])
 def delete_literature_entry(entry_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('SELECT filename FROM literature_entries WHERE id = ?', (entry_id,))
-    result = c.fetchone()
-    if result and result[0]:
-        filepath = os.path.join(LITERATURE_FILES_DIR, result[0])
-        if os.path.exists(filepath):
-            os.remove(filepath)
     c.execute('DELETE FROM literature_entries WHERE id = ?', (entry_id,))
     conn.commit()
     conn.close()
-    flash('文献条目已删除')
+    flash('条目已删除')
     return redirect(url_for('literature'))
 
 
-#  DOWNLOAD 
-@app.route('/download_database/<path:filename>')
-def download_database_file(filename):
-    return send_from_directory(FILES_DIR, filename, as_attachment=True)
-
-@app.route('/download_literature/<path:filename>')
-def download_literature_file(filename):
-    return send_from_directory(LITERATURE_FILES_DIR, filename, as_attachment=True)
-
-
-import os
+# ===========================
+# App Start
+# ===========================
 
 if __name__ == '__main__':
+    init_db()
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-
