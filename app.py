@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'   # 为了Flash消息
 
 # 持久化路径
-BASE_PERSISTENT = '/persistent'
+BASE_PERSISTENT = 'persistent'
 DB_PATH = os.path.join(BASE_PERSISTENT, 'database.db')
 FILES_DIR = os.path.join(BASE_PERSISTENT, 'files')
 
