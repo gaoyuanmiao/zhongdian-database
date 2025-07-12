@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>课题三管理系统 - 首页</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f9f9f9; text-align: center; }
+    h1 { margin-top: 50px; }
+    a.button {
+      display: inline-block;
+      margin: 20px;
+      padding: 15px 30px;
+      background-color: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 18px;
+    }
+    a.button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>国家重点研发项目 - 课题三管理系统</h1>
+  <p>请选择要进入的功能模块：</p>
+  <a href="{{ url_for('database') }}" class="button">数据库管理</a>
+  <a href="{{ url_for('literature') }}" class="button">资料库管理</a>
+</body>
+</html>
